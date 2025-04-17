@@ -3,7 +3,21 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+
+// Allow CORS from the specific frontend URL (Netlify)
+const allowedOrigins = ['https://myndra.netlify.app'];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions)); // Use the specific CORS options here
 app.use(express.json());
 
 // ✅ Use your actual Gemini API key here
@@ -32,8 +46,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Start server on Render's deployed URL (not localhost anymore)
-app.listen(3000, () => console.log('Server running on https://nexora-backend-qv8y.onrender.com'));
+app.listen(3000, () => console.log('Server running on https://myndra-backend-qv8y.onrender.com'));
 
 // Web search route using SerpAPI
 const SERP_API_KEY = '9ae725906eac0c3de0289c9326c00915bb6087eeedfba14d0b38f9e10fe0a6cb'; // ← Replace this
@@ -57,25 +70,3 @@ app.post('/api/search', async (req, res) => {
     res.status(500).json({ reply: "Couldn't fetch search results." });
   }
 });
-
-
-app.post('/api/search', async (req, res) => {
-  const { query } = req.body;
-  try {
-    const serpResponse = await axios.get(`https://serpapi.com/search.json`, {
-      params: {
-        q: query,
-        api_key: SERP_API_KEY
-      }
-    });
-
-    const results = serpResponse.data.organic_results?.slice(0, 3) || [];
-    const summary = results.map(r => `• ${r.title}\n${r.link}`).join('\n\n') || "No results found.";
-    res.json({ reply: summary });
-
-  } catch (error) {
-    console.error("Search error:", error.message);
-    res.status(500).json({ reply: "Couldn't fetch search results." });
-  }
-});
-
