@@ -2,11 +2,13 @@
 <html>
 
 <head>
-    <title>Myndra AI Chatbot</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" defer></script>
+  <meta charset="UTF-8"> <!- Add if not present -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!- **** ADD THIS LINE **** -->
+  <title>Nexora AI Chatbot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" defer></script>
     <style>
         /* --- Keep ALL CSS rules from the previous version --- */
         :root {
@@ -62,15 +64,17 @@
             align-items: flex-start;
             height: 100vh;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-            position: fixed;
+            position: fixed; /* Keep this */
             left: 0;
             top: 0;
-            z-index: 100;
+            z-index: 100; 
             overflow: hidden;
             transition: transform 0.3s ease;
             flex-shrink: 0;
             box-sizing: border-box;
             border-right: 1px solid var(--border-color); /* Add border */
+            transform: translateX(0); /* Default state for desktop */
+            transition: transform 0.3s ease;
         }
 
         #sidebar.collapsed {
@@ -257,10 +261,12 @@
             display: flex;
             /* REMOVED justify-content: center; */
             height: 100vh;
-            padding-left: var(--sidebar-width);
-            transition: padding-left 0.3s ease;
+            
+           
             box-sizing: border-box;
-             overflow: hidden; /* Prevent potential overflow issues */
+             overflow: hidden;
+             position: relative; /* Or keep as is if no other z-index needed */
+             z-index: 1;  /* Prevent potential overflow issues */
         }
 
         #main-content.sidebar-collapsed {
@@ -522,6 +528,7 @@
         #popup-overlay {
             display: none;
             position: fixed;
+            z-index: 99;
             top: 0;
             left: 0;
             width: 100%;
@@ -531,7 +538,10 @@
             backdrop-filter: blur(3px);
             cursor: pointer; /* Indicate it can be clicked to close */
         }
-
+        #popup-overlay.sidebar-active { /* New class to show overlay for sidebar */
+             display: block;
+             cursor: pointer;
+        }
         body.light-theme #popup-overlay {
              background-color: rgba(255, 255, 255, 0.4); /* Lighter overlay */
         }
