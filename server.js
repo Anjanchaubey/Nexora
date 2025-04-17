@@ -49,7 +49,7 @@ app.post('/api/chat', async (req, res) => {
 app.listen(3000, () => console.log('Server running on https://myndra-backend-qv8y.onrender.com'));
 
 // Web search route using SerpAPI
-const SERP_API_KEY = '9ae725906eac0c3de0289c9326c00915bb6087eeedfba14d0b38f9e10fe0a6cb'; // ← Replace this
+const SERP_API_KEY = '91fdb773091d93af154b33f5ada360bd3e06931e6fca413c1840a3c8469f6929'; // ← Replace this
 
 app.post('/api/search', async (req, res) => {
   const { query } = req.body;
