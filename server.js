@@ -23,7 +23,6 @@ app.post('/api/chat', async (req, res) => {
 
         console.log("Gemini replied with:", geminiResponse.data.candidates[0].content.parts[0].text);
 
-
         const reply = geminiResponse.data.candidates[0].content.parts[0].text;
         res.json({ reply });
     } catch (error) {
@@ -33,12 +32,32 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-
-
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+// Start server on Render's deployed URL (not localhost anymore)
+app.listen(3000, () => console.log('Server running on https://nexora-backend-qv8y.onrender.com'));
 
 // Web search route using SerpAPI
 const SERP_API_KEY = '9ae725906eac0c3de0289c9326c00915bb6087eeedfba14d0b38f9e10fe0a6cb'; // ← Replace this
+
+app.post('/api/search', async (req, res) => {
+  const { query } = req.body;
+  try {
+    const serpResponse = await axios.get(`https://serpapi.com/search.json`, {
+      params: {
+        q: query,
+        api_key: SERP_API_KEY
+      }
+    });
+
+    const results = serpResponse.data.organic_results?.slice(0, 3) || [];
+    const summary = results.map(r => `• ${r.title}\n${r.link}`).join('\n\n') || "No results found.";
+    res.json({ reply: summary });
+
+  } catch (error) {
+    console.error("Search error:", error.message);
+    res.status(500).json({ reply: "Couldn't fetch search results." });
+  }
+});
+
 
 app.post('/api/search', async (req, res) => {
   const { query } = req.body;
