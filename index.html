@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Nexora AI Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" defer></script>
+    <style>
+        /* --- Keep ALL CSS rules from the previous version --- */
+        :root {
+            --sidebar-width: 220px; /* Default sidebar width */
+            --sidebar-bg: #161b22;
+            --main-bg: #0d1117;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --accent-blue: #58a6ff;
+            --accent-blue-hover: #3d8bff;
+            --button-bg: #238636; /* Github button green */
+            --button-hover-bg: #2ea043;
+            --user-msg-bg: #21262d;
+            --bot-msg-bg: #2c313a; /* Slightly lighter bot messages */
+            --input-bg: #161b22; /* Darker input */
+            --input-focus-bg: #0d1117; /* Even darker focus */
+            --code-bg: #161b22; /* Darker code block */
+            --code-header-bg: #0d1117; /* Darkest header */
+            --code-border: #30363d;
+            --code-text: #c9d1d9;
+            --table-border: #444c56; /* Slightly lighter border for tables */
+            --table-header-bg: #21262d; /* Match user message bg */
+            --table-row-hover: rgba(88, 166, 255, 0.08); /* Subtle hover */
+            --input-shadow: 0 -2px 6px rgba(0, 0, 0, 0.2); /* Shadow for dark input area */
+        }
+
+        /* General Styles */
+        html, body {
+             height: 100%;
+             margin: 0;
+             padding: 0;
+             overflow: hidden;
+        }
+
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background: var(--main-bg);
+            color: var(--text-primary);
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        #sidebar {
+            width: var(--sidebar-width);
+            min-width: 180px; /* Minimum sidebar width */
+            max-width: 400px; /* Maximum sidebar width */
+            background: var(--sidebar-bg);
+            color: var(--text-primary);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            height: 100vh;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            border-right: 1px solid var(--border-color); /* Add border */
+        }
+
+        #sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        /* Resizer Handle */
+        #sidebar-resizer {
+            width: 6px; /* Slightly wider */
+            height: 100%;
+            background-color: transparent; /* Transparent by default */
+            cursor: col-resize;
+            position: absolute;
+            top: 0;
+            right: -3px; /* Center the handle visually */
+            z-index: 101;
+             transition: background-color 0.2s ease;
+        }
+        #sidebar-resizer:hover {
+             background-color: var(--accent-blue);
+        }
+
+
+        #sidebar-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 101;
+            display: block;
+            padding: 5px;
+        }
+
+        #sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-top: 30px;
+            margin-bottom: 15px;
+         }
+
+
+        #sidebar h2 {
+            margin-bottom: 0;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+
+        /* Profile Picture */
+        #profile-picture {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #343a40;
+            margin-right: 10px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        /* User Info Container at bottom */
+        #sidebar-bottom {
+            margin-top: auto;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+
+        #login-button {
+            padding: 8px 12px;
+            background-color: var(--button-bg);
+            color: white;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-left: auto;
+            width: auto;
+        }
+
+        #login-button:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+
+        #chat-history {
+            width: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-history-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            border-radius: 6px;
+             transition: background-color 0.2s ease;
+             margin-bottom: 2px; /* Space between items */
+        }
+
+         .chat-history-item:hover {
+             background-color: rgba(255, 255, 255, 0.03);
+         }
+         .chat-history-item:hover .delete-chat-button {
+            opacity: 1;
+         }
+
+
+        #chat-history a {
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 8px;
+            flex-grow: 1;
+            text-align: left;
+            font-size: 0.9rem;
+            cursor: pointer;
+             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        #chat-history .chat-history-item.active { /* Apply active style to wrapper */
+             background-color: rgba(88, 166, 255, 0.15);
+        }
+        #chat-history a.active { /* Keep font weight on link */
+             font-weight: 500;
+        }
+
+
+        .delete-chat-button {
+             background: none;
+             border: none;
+             color: var(--text-secondary);
+             cursor: pointer;
+             font-size: 0.8rem;
+             padding: 5px;
+             margin-left: 5px;
+             margin-right: 3px; /* Ensure it fits */
+             opacity: 0;
+             transition: opacity 0.2s ease, color 0.2s ease;
+             flex-shrink: 0;
+        }
+         .delete-chat-button:hover {
+             color: #f85149;
+         }
+
+
+         /* New Chat Button Styling */
+        #new-chat-button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 5px 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            margin-left: auto;
+        }
+
+        #new-chat-button:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+
+        /* Main Content Styles */
+         #main-content {
+            flex-grow: 1;
+            display: flex;
+            /* REMOVED justify-content: center; */
+            height: 100vh;
+            padding-left: var(--sidebar-width);
+            transition: padding-left 0.3s ease;
+            box-sizing: border-box;
+             overflow: hidden; /* Prevent potential overflow issues */
+        }
+
+        #main-content.sidebar-collapsed {
+             padding-left: 0;
+        }
+
+        #chatbox {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto; /* ADDED: Centers chatbox if main-content is wider */
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+            height: 100%;
+        }
+
+        #messages {
+            flex-grow: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            word-break: break-word;
+        }
+
+        /* Message Styles */
+        .message {
+            padding: 10px 16px;
+            margin: 6px 0;
+            border-radius: 10px;
+            max-width: 90%;
+            word-break: break-word;
+            font-size: 15px;
+            line-height: 1.55;
+            position: relative;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: messageFadeIn 0.3s ease forwards;
+            border: 1px solid var(--border-color);
+        }
+        @keyframes messageFadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .user {
+            background: var(--user-msg-bg);
+            color: var(--text-primary);
+            margin-left: auto;
+            text-align: left;
+        }
+
+        .bot {
+            background: var(--bot-msg-bg);
+            color: var(--text-primary);
+            margin-right: auto;
+            text-align: left;
+            padding: 10px 16px; /* Reset padding for bot */
+        }
+
+        /* Copy Icon for entire message - Adjusted for bot messages */
+        .bot .copy-icon {
+             position: absolute;
+             right: 8px;
+             bottom: 8px;
+             transform: translateY(0);
+             cursor: pointer;
+             color: var(--text-secondary);
+             font-size: 13px;
+             opacity: 0;
+             transition: opacity 0.2s ease;
+             background: rgba(0,0,0,0.3);
+             padding: 2px 4px;
+             border-radius: 4px;
+             z-index: 2;
+        }
+        .bot:hover .copy-icon { opacity: 1; }
+        .copy-icon:hover { color: var(--accent-blue); }
+
+        /* Copied Tooltip */
+        .copied-tooltip {
+             position: absolute;
+             right: 8px;
+             top: -25px;
+             background: #333;
+             color: #fff;
+             padding: 3px 6px;
+             border-radius: 4px;
+             font-size: 11px;
+             opacity: 0;
+             transition: opacity 0.3s ease;
+             pointer-events: none;
+             z-index: 3;
+        }
+        .copied-tooltip.show { opacity: 1; }
+
+        /* Formatted Content Styles */
+        .bot > *:first-child { margin-top: 0; }
+        .bot > *:last-child { margin-bottom: 0; }
+
+        .bot h3 { font-size: 1.1em; margin: 1em 0 0.5em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .bot h4 { font-size: 1em; margin: 0.8em 0 0.4em; color: var(--text-primary); font-weight: 500; }
+        .bot p { margin: 0.5em 0; line-height: 1.6; }
+        .bot ul, .bot ol { margin: 0.5em 0; padding-left: 25px; }
+        .bot li { margin: 0.3em 0; line-height: 1.6; }
+        .bot a { color: var(--accent-blue); text-decoration: underline; word-break: break-all; }
+        .bot a:hover { color: var(--accent-blue-hover); }
+
+         /* --- Table Styling --- */
+        .bot table {
+             width: 100%;
+             border-collapse: separate; /* Use separate for border-radius */
+             border-spacing: 0;
+             margin: 15px 0;
+             font-size: 14px;
+             background-color: var(--user-msg-bg); /* Slightly darker than bot msg bg */
+             border-radius: 6px;
+             overflow: hidden; /* Important for border-radius */
+             border: 1px solid var(--table-border);
+             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .bot th, .bot td {
+             border-bottom: 1px solid var(--table-border);
+             padding: 10px 14px; /* More padding */
+             text-align: left;
+             vertical-align: top;
+        }
+        .bot thead th {
+             background-color: var(--table-header-bg); /* Darker header */
+             font-weight: 500;
+             color: var(--text-primary);
+             border-bottom: 1px solid var(--table-border);
+             position: sticky; /* Make header sticky if table scrolls (if wrapped in a container) */
+             top: 0; /* Needed for sticky */
+        }
+        .bot tbody tr:last-child td {
+             border-bottom: none; /* No border on the last row */
+        }
+        .bot tbody tr:hover {
+            background-color: var(--table-row-hover); /* Subtle hover */
+        }
+        .bot td code, .bot th code { /* Inline code within tables */
+             background-color: rgba(139, 148, 158, 0.2);
+             padding: 0.2em 0.4em;
+             border-radius: 4px;
+             font-size: 0.88em;
+             white-space: normal;
+             font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+             color: var(--text-primary);
+         }
+
+
+        /* --- Code Block Styling --- */
+        .code-block-wrapper {
+            background-color: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 6px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .code-block-header {
+            background-color: var(--code-header-bg);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copy-code-button {
+            background: var(--bot-msg-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .copy-code-button i { margin-right: 5px; }
+        .copy-code-button:hover { background-color: var(--user-msg-bg); color: var(--accent-blue); }
+        .copy-code-button.copied { background-color: var(--button-bg); color: white; }
+
+        .bot pre {
+            margin: 0;
+            padding: 12px;
+            overflow-x: auto;
+            background-color: transparent;
+            border: none;
+            line-height: 1.45;
+            color: var(--code-text);
+        }
+        .bot pre code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            background-color: transparent !important;
+            padding: 0 !important;
+            color: inherit;
+            white-space: pre; /* Important: Preserve whitespace and line breaks */
+            display: block;
+        }
+         /* Inline code */
+         .bot p > code, .bot li > code, .bot em > code, .bot strong > code {
+             background-color: rgba(139, 148, 158, 0.2);
+             padding: 0.2em 0.4em;
+             border-radius: 4px;
+             font-size: 0.85em;
+             white-space: normal;
+             font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+             color: var(--text-primary);
+         }
+
+        /* --- Input Area --- */
+        #input-area {
+             display: flex;
+             align-items: center;
+             padding: 15px 20px; /* Increased padding */
+             /* REMOVED border-top: 1px solid var(--border-color); */
+             background: var(--user-msg-bg);
+             flex-shrink: 0;
+             border-top-left-radius: 12px; /* ADDED */
+             border-top-right-radius: 12px; /* ADDED */
+             box-shadow: var(--input-shadow); /* ADDED shadow */
+             position: relative; /* For potential future absolute elements inside */
+             margin: 0; /* Remove margin if any */
+        }
+        input { flex-grow: 1; padding: 10px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--input-bg); font-size: 15px; outline: none; color: var(--text-primary); transition: background-color 0.2s ease, border-color 0.2s ease; direction: ltr; }
+        input:focus { background-color: var(--main-bg); border-color: var(--accent-blue); }
+        button#send-button, button#search-button { padding: 10px 12px; margin-left: 10px; border-radius: 50%; border: none; background-color: var(--accent-blue); color: white; font-size: 15px; cursor: pointer; transition: background-color 0.2s ease; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+         button:disabled { background-color: var(--border-color); cursor: not-allowed; opacity: 0.6; }
+        button:hover:not(:disabled) { background-color: var(--accent-blue-hover); }
+        button:focus { outline: none; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3); }
+
+        /* --- Typing Indicator --- */
+        #typing-indicator { display: none; color: var(--text-secondary); padding: 5px 15px; text-align: left; direction: ltr; font-size: 0.85rem; height: 20px; flex-shrink: 0; }
+         #typing-indicator.visible { display: block; }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; margin-right: 3px; border-radius: 50%; background-color: var(--text-secondary); animation: typing 1.5s infinite; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-3px); opacity: 1; } }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            /* Sidebar starts collapsed on mobile */
+            #sidebar { transform: translateX(-100%); }
+            #sidebar.open { transform: translateX(0); } /* JS will add/remove .open */
+            #main-content { padding-left: 0; }
+            #sidebar-toggle { left: 10px; top: 10px; }
+
+        }
+        @media (max-width: 480px) {
+             #sidebar { width: 200px; }
+             .message { max-width: 95%; }
+             input { font-size: 14px; }
+             button#send-button, button#search-button { width: 36px; height: 36px; margin-left: 8px; }
+             #input-area { padding: 10px 15px; } /* Adjust padding for smaller screens */
+        }
+
+
+        /* Popup Overlay */
+        #popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Dark overlay */
+            z-index: 998; /* Below popup */
+            backdrop-filter: blur(3px);
+            cursor: pointer; /* Indicate it can be clicked to close */
+        }
+
+        body.light-theme #popup-overlay {
+             background-color: rgba(255, 255, 255, 0.4); /* Lighter overlay */
+        }
+
+        /* General Popup Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            background-color: var(--sidebar-bg); /* Use sidebar bg */
+            color: var(--text-primary);
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            min-width: 320px;
+            max-width: 450px;
+            border: 1px solid var(--border-color);
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+        }
+
+        body.light-theme .popup {
+            background-color: #ffffff;
+            color: #202124; /* Google Docs dark text */
+             border-color: #dadce0; /* Google light border */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .popup-close-button {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px;
+        }
+        .popup-close-button:hover {
+            color: var(--text-primary);
+        }
+        body.light-theme .popup-close-button {
+             color: #5f6368; /* Google icons */
+        }
+         body.light-theme .popup-close-button:hover {
+             color: #202124;
+         }
+
+
+        /* Profile Popup Specific Styles */
+        #profile-popup .popup-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        body.light-theme #profile-popup .popup-header {
+            border-bottom-color: #e0e0e0; /* Lighter border */
+        }
+
+        #popup-profile-pic {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 18px;
+            border: 2px solid var(--border-color);
+            background-color: var(--main-bg); /* Placeholder bg */
+        }
+        body.light-theme #popup-profile-pic {
+             border-color: #dadce0;
+             background-color: #f1f3f4; /* Lighter placeholder bg */
+        }
+
+
+        #popup-username {
+            font-size: 1.15rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+         body.light-theme #popup-username {
+            color: #202124;
+         }
+
+        #profile-popup .popup-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* Spacing between options */
+            margin-bottom: 25px;
+        }
+
+        #profile-popup .option-button {
+            background-color: var(--bot-msg-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 9px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.95rem;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #profile-popup .option-button i {
+             color: var(--text-secondary);
+             font-size: 1rem;
+             width: 16px; /* Align icons */
+             text-align: center;
+        }
+
+         #profile-popup .option-button:hover {
+            background-color: var(--user-msg-bg);
+            border-color: var(--accent-blue);
+        }
+
+         body.light-theme #profile-popup .option-button {
+             background-color: #f8f9fa; /* Lighter button */
+             color: #3c4043; /* Darker text */
+             border-color: #dadce0;
+         }
+          body.light-theme #profile-popup .option-button:hover {
+              background-color: #f1f3f4;
+              border-color: #1a73e8; /* Google blue */
+          }
+          body.light-theme #profile-popup .option-button i {
+               color: #5f6368;
+          }
+
+
+        /* Theme Toggle Switch */
+        #profile-popup .theme-toggle-label {
+             display: flex;
+             align-items: center;
+             justify-content: space-between; /* Push switch to the right */
+             cursor: pointer;
+             padding: 9px 15px; /* Match button padding */
+             background-color: var(--bot-msg-bg);
+             border: 1px solid var(--border-color);
+             border-radius: 6px;
+             transition: background-color 0.2s ease, border-color 0.2s ease;
+             font-size: 0.95rem;
+        }
+         body.light-theme #profile-popup .theme-toggle-label {
+            background-color: #f8f9fa;
+            color: #3c4043;
+            border-color: #dadce0;
+        }
+         #profile-popup .theme-toggle-label:hover {
+              background-color: var(--user-msg-bg);
+              border-color: var(--accent-blue);
+          }
+         body.light-theme #profile-popup .theme-toggle-label:hover {
+             background-color: #f1f3f4;
+             border-color: #1a73e8;
+         }
+
+
+        #theme-toggle {
+            appearance: none;
+            width: 40px;
+            height: 20px;
+            background-color: var(--border-color);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            outline: none;
+            vertical-align: middle;
+        }
+         body.light-theme #theme-toggle {
+             background-color: #bdc1c6; /* Light grey inactive */
+         }
+
+        #theme-toggle::before {
+            content: "";
+            width: 16px;
+            height: 16px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        #theme-toggle:checked {
+            background-color: var(--accent-blue); /* Active color */
+        }
+         body.light-theme #theme-toggle:checked {
+              background-color: #8ab4f8; /* Google light blue */
+         }
+
+
+        #theme-toggle:checked::before {
+            transform: translateX(20px);
+        }
+
+        #profile-popup .popup-footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+         body.light-theme #profile-popup .popup-footer {
+            color: #5f6368;
+            border-top-color: #e0e0e0;
+         }
+
+
+        /* Cropper Modal Styles */
+        #cropper-modal {
+             /* Use .popup styles as base, but potentially larger */
+             min-width: 400px; /* Wider for cropping area */
+             max-width: 90vw; /* Limit width */
+        }
+
+        #cropper-image-container {
+            width: 100%;
+            max-height: 50vh; /* Limit height */
+            margin-bottom: 20px;
+            background-color: var(--main-bg); /* Background for image area */
+             border: 1px dashed var(--border-color); /* Visual guide */
+             overflow: hidden; /* Contain the image */
+        }
+         body.light-theme #cropper-image-container {
+              background-color: #e8eaed; /* Light background */
+              border-color: #dadce0;
+         }
+
+        #cropper-image-container img {
+             display: block; /* Remove extra space below image */
+             max-width: 100%; /* Image should not exceed container */
+         }
+        /* Cropper.js adds its own UI, ensure it contrasts */
+        .cropper-view-box,
+        .cropper-face {
+          border-radius: 50%; /* Make cropper circular */
+        }
+
+        .cropper-modal-buttons {
+             display: flex;
+             justify-content: flex-end; /* Buttons to the right */
+             gap: 10px;
+             margin-top: 15px;
+        }
+         .cropper-modal-buttons button {
+             padding: 8px 16px;
+             border-radius: 6px;
+             cursor: pointer;
+             font-weight: 500;
+             transition: background-color 0.2s, border-color 0.2s;
+             border: 1px solid var(--border-color);
+         }
+          body.light-theme .cropper-modal-buttons button {
+             border-color: #dadce0;
+          }
+
+         .cropper-modal-buttons .crop-save-button {
+              background-color: var(--button-bg);
+              color: white;
+              border-color: var(--button-bg);
+          }
+          .cropper-modal-buttons .crop-save-button:hover {
+              background-color: var(--button-hover-bg);
+               border-color: var(--button-hover-bg);
+          }
+           body.light-theme .cropper-modal-buttons .crop-save-button {
+               background-color: #1a73e8; /* Google blue */
+               border-color: #1a73e8;
+           }
+            body.light-theme .cropper-modal-buttons .crop-save-button:hover {
+                background-color: #185abc;
+                border-color: #185abc;
+            }
+
+          .cropper-modal-buttons .crop-cancel-button {
+               background-color: var(--bot-msg-bg);
+               color: var(--text-primary);
+           }
+            .cropper-modal-buttons .crop-cancel-button:hover {
+                background-color: var(--user-msg-bg);
+                 border-color: var(--text-secondary);
+            }
+             body.light-theme .cropper-modal-buttons .crop-cancel-button {
+                 background-color: #f8f9fa;
+                 color: #3c4043;
+             }
+              body.light-theme .cropper-modal-buttons .crop-cancel-button:hover {
+                 background-color: #f1f3f4;
+                 border-color: #bdc1c6;
+             }
+
+        /* --- Light Theme Variable Overrides --- */
+        body.light-theme {
+             --sidebar-bg: #f8f9fa; /* Lighter sidebar */
+             --main-bg: #ffffff; /* White main area */
+             --text-primary: #202124; /* Darker text */
+             --text-secondary: #5f6368; /* Medium grey text */
+             --border-color: #dadce0; /* Lighter borders */
+             --accent-blue: #1a73e8; /* Google blue */
+             --accent-blue-hover: #185abc;
+             --button-bg: #1a73e8; /* Google blue */
+             --button-hover-bg: #185abc;
+             --user-msg-bg: #e8f0fe; /* Light blue user messages */
+             --bot-msg-bg: #f1f3f4; /* Very light grey bot messages */
+             --input-bg: #f1f3f4; /* Light input */
+             --input-focus-bg: #ffffff; /* White input focus */
+             --code-bg: #f8f9fa; /* Light code block */
+             --code-header-bg: #e8eaed; /* Slightly darker header */
+             --code-border: #dadce0;
+             --code-text: #202124;
+            --table-border: #e0e0e0;
+            --table-header-bg: #f1f3f4;
+            --table-row-hover: rgba(26, 115, 232, 0.06); /* Light blue hover */
+            --input-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08); /* Light theme shadow */
+        }
+
+         /* Ensure message text color applies correctly in light theme */
+         body.light-theme .message.user,
+         body.light-theme .message.bot {
+              color: var(--text-primary);
+         }
+         body.light-theme .bot a {
+             color: var(--accent-blue);
+         }
+         body.light-theme .bot a:hover {
+              color: var(--accent-blue-hover);
+          }
+         body.light-theme code {
+              color: var(--text-primary);
+              background-color: rgba(32, 33, 36, 0.06); /* Subtle code bg */
+          }
+           body.light-theme .bot pre code {
+              color: var(--code-text);
+              background-color: transparent !important;
+           }
+
+            body.light-theme input {
+                color: var(--text-primary);
+            }
+            body.light-theme button#send-button,
+            body.light-theme button#search-button {
+                background-color: var(--accent-blue);
+            }
+            body.light-theme button#send-button:hover:not(:disabled),
+            body.light-theme button#search-button:hover:not(:disabled) {
+                background-color: var(--accent-blue-hover);
+            }
+             body.light-theme button:disabled {
+                  background-color: var(--border-color); /* Lighter disabled */
+             }
+              body.light-theme #typing-indicator span {
+                  background-color: var(--text-secondary);
+              }
+              body.light-theme #login-button {
+                 background-color: #1a73e8;
+              }
+               body.light-theme #login-button:hover {
+                   background-color: #185abc;
+               }
+               body.light-theme #new-chat-button {
+                    border-color: var(--border-color);
+                    color: var(--text-secondary);
+               }
+               body.light-theme #new-chat-button:hover {
+                    background-color: rgba(0, 0, 0, 0.03);
+                    color: var(--text-primary);
+               }
+                body.light-theme #sidebar-resizer:hover {
+                     background-color: var(--accent-blue);
+                }
+                 body.light-theme .chat-history-item:hover {
+                     background-color: rgba(0, 0, 0, 0.03);
+                 }
+                  body.light-theme #chat-history .chat-history-item.active {
+                     background-color: rgba(26, 115, 232, 0.1); /* Lighter blue active */
+                 }
+                  body.light-theme .delete-chat-button {
+                      color: var(--text-secondary);
+                  }
+                   body.light-theme .delete-chat-button:hover {
+                      color: #d93025; /* Google red */
+                   }
+                   body.light-theme #input-area {
+                       background: var(--bot-msg-bg); /* Match light bot messages bg */
+                       box-shadow: var(--input-shadow); /* Use light shadow var */
+                   }
+                    body.light-theme input {
+                         background: var(--input-bg); /* Already set */
+                    }
+                    body.light-theme input:focus {
+                         background-color: var(--input-focus-bg); /* Already set */
+                         border-color: var(--accent-blue);
+                    }
+
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+         <div id="sidebar-header">
+             <h2>Nexora AI</h2>
+             <button id="new-chat-button" title="New Chat"><i class="fas fa-edit"></i></button>
+        </div>
+
+        <div id="chat-history">
+            <!-- Chat history links -->
+        </div>
+        <div id="sidebar-bottom">
+             <img id="profile-picture" src="default_profile.png" alt="Profile Picture">
+            <button id="login-button">Login</button>
+        </div>
+        <div id="sidebar-resizer"></div> <!-- Resizer Handle -->
+    </div>
+
+    <button id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+
+    <div id="main-content">
+        <div id="chatbox">
+            <div id="messages"></div>
+            <div id="typing-indicator">
+                 <span></span><span></span><span></span>
+            </div>
+              <div id="input-area">
+            <input type="text" id="userInput" placeholder="Ask me anything..." />
+            <button id="search-button" onclick="searchWeb()" title="Search the Web"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <button id="send-button" onclick="sendMessage()" title="Send"><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+    </div>
+    <!-- Removed Chatbox Resizer, wasn't implemented -->
+        </div> <!-- This closing div might be extra -->
+    </div>
+
+     <!-- New Hidden Elements -->
+     <div id="popup-overlay"></div>
+
+     <div id="profile-popup" class="popup">
+         <button class="popup-close-button">×</button>
+         <div class="popup-header">
+             <img id="popup-profile-pic" src="default_profile.png" alt="Profile Picture">
+             <span id="popup-username">Username</span>
+         </div>
+         <div class="popup-options">
+             <button id="change-username-button" class="option-button">
+                 <i class="fas fa-pencil-alt"></i> Change Username
+             </button>
+             <button id="change-photo-button" class="option-button">
+                 <i class="fas fa-camera"></i> Change Profile Photo
+             </button>
+             <label for="theme-toggle" class="theme-toggle-label">
+                  <span>Dark Mode</span> <!-- Text updated dynamically -->
+                  <input type="checkbox" id="theme-toggle">
+             </label>
+         </div>
+         <div class="popup-footer">
+             Nexora developed by ANJAN
+         </div>
+     </div>
+
+     <div id="cropper-modal" class="popup">
+          <button class="popup-close-button">×</button>
+          <h3>Crop Image</h3>
+          <div id="cropper-image-container">
+               <img id="image-to-crop" src="" alt="Image to crop">
+          </div>
+          <div class="cropper-modal-buttons">
+               <button id="crop-cancel-button" class="crop-cancel-button">Cancel</button>
+               <button id="crop-save-button" class="crop-save-button">Crop & Save</button>
+          </div>
+     </div>
+
+     <!-- Hidden file input for profile picture -->
+     <input type="file" id="profile-pic-input" accept="image/*" style="display: none;">
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, push, serverTimestamp, query, orderByChild, limitToFirst, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCYY2GQqS0tCXb7Oxw8AWXhpexq9e8VRUs",
+            authDomain: "aspirehub-32863.firebaseapp.com",
+            projectId: "aspirehub-32863",
+            storageBucket: "aspirehub-32863.appspot.com",
+            messagingSenderId: "686810111182",
+            appId: "1:686810111182:web:4290b4b1b6e64934ec449f",
+            measurementId: "G-KX41R0SSMY",
+            databaseURL: "https://aspirehub-32863-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        let currentUserId = null;
+        let currentChatId = null;
+        let messagesListener = null;
+
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mainContent = document.getElementById('main-content');
+        const profilePicture = document.getElementById('profile-picture');
+        const loginButton = document.getElementById('login-button');
+        const chatHistoryDiv = document.getElementById('chat-history');
+        const messagesDiv = document.getElementById('messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('send-button');
+        const searchButton = document.getElementById('search-button');
+        const newChatButton = document.getElementById('new-chat-button');
+        const sidebarResizer = document.getElementById('sidebar-resizer');
+        const popupOverlay = document.getElementById('popup-overlay');
+        const profilePopup = document.getElementById('profile-popup');
+        const closePopupButtons = document.querySelectorAll('.popup-close-button');
+         // Select all close buttons
+        const popupProfilePic = document.getElementById('popup-profile-pic');
+        const popupUsername = document.getElementById('popup-username');
+        const changeUsernameButton = document.getElementById('change-username-button');
+        const changePhotoButton = document.getElementById('change-photo-button');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleLabelSpan = document.querySelector('.theme-toggle-label span');
+         // Get the span for text
+        const hiddenFileInput = document.getElementById('profile-pic-input');
+        const cropperModal = document.getElementById('cropper-modal');
+        const imageToCrop = document.getElementById('image-to-crop');
+        const cropSaveButton = document.getElementById('crop-save-button');
+        const cropCancelButton = document.getElementById('crop-cancel-button');
+
+
+ // --- State Variables ---
+
+        let cropperInstance = null; // To hold the Cropper.js instance
+        const rawCodeStorage = {};
+
+        // Temporary storage for raw code blocks before display
+
+         // --- Theme Handling ---
+         function applyTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+                themeToggle.checked = true;
+                if(themeToggleLabelSpan) themeToggleLabelSpan.textContent = "Light Mode";
+            } else {
+                document.body.classList.remove('light-theme');
+                themeToggle.checked = false;
+                 if(themeToggleLabelSpan) themeToggleLabelSpan.textContent = "Dark Mode";
+            }
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-theme');
+            const newTheme = isLight ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme); // Update label and checkbox state
+        }
+
+        // Apply saved theme on load
+        const savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+        applyTheme(savedTheme);
+
+        // Theme toggle listener
+        themeToggle.addEventListener('change', toggleTheme);
+
+         // --- Popups ---
+         function openPopup(popupElement) {
+            if (!currentUserId) {
+                alert("Please login first.");
+                return;
+            }
+            // Populate profile popup before showing
+            if (popupElement === profilePopup && auth.currentUser) {
+                popupProfilePic.src = auth.currentUser.photoURL || 'default_profile.png';
+                popupUsername.textContent = auth.currentUser.displayName || 'Anonymous User';
+            }
+            popupOverlay.style.display = 'block';
+            popupElement.style.display = 'block';
+             // Add listener to close popup on ESC key press
+            document.addEventListener('keydown', handleEscKey);
+        }
+
+        function closePopup(popupElement) {
+            popupOverlay.style.display = 'none';
+            popupElement.style.display = 'none';
+            if (popupElement === cropperModal && cropperInstance) {
+                 cropperInstance.destroy(); // Clean up cropper
+                 cropperInstance = null;
+                 imageToCrop.src = ''; // Clear image source
+            }
+             // Remove ESC key listener when no popups are open
+             document.removeEventListener('keydown', handleEscKey);
+        }
+         // Close popups when clicking overlay
+         popupOverlay.addEventListener('click', () => {
+             closePopup(profilePopup);
+             closePopup(cropperModal);
+         });
+
+         // Close buttons for all popups
+         closePopupButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                 const popupToClose = button.closest('.popup');
+                 if (popupToClose) {
+                     closePopup(popupToClose);
+                 }
+             });
+         });
+
+
+          // ESC key handler
+        function handleEscKey(event) {
+             if (event.key === 'Escape') {
+                 // Close the top-most popup (cropper first, then profile)
+                 if (cropperModal.style.display === 'block') {
+                     closePopup(cropperModal);
+                 } else if (profilePopup.style.display === 'block') {
+                     closePopup(profilePopup);
+                 }
+             }
+         }
+
+        // --- Cropper Logic ---
+        function initializeCropper(imageUrl) {
+            imageToCrop.src = imageUrl; // Set image source for cropper
+             openPopup(cropperModal); // Open the cropper modal
+
+            // Wait for image to load potentially? Better: use onload
+            imageToCrop.onload = () => {
+                 if (cropperInstance) {
+                      cropperInstance.destroy(); // Destroy previous instance if any
+                 }
+                 cropperInstance = new Cropper(imageToCrop, {
+                      aspectRatio: 1 / 1, // Square aspect ratio for profile pics
+                      viewMode: 1,        // Restrict crop box to canvas
+                      background: false,  // Hide grid background
+                      autoCropArea: 0.8,  // Initial crop area size
+                      zoomable: true,
+                      movable: true,
+                      cropBoxResizable: true,
+                 });
+            };
+             imageToCrop.onerror = () => {
+                 console.error("Error loading image for cropper.");
+                 alert("Could not load the image for cropping.");
+                 closePopup(cropperModal);
+             }
+        }
+
+        cropCancelButton.addEventListener('click', () => closePopup(cropperModal));
+
+        cropSaveButton.addEventListener('click', async () => {
+            if (!cropperInstance || !currentUserId) return;
+
+            cropSaveButton.textContent = 'Saving...';
+            cropSaveButton.disabled = true;
+
+            try {
+                // Get cropped canvas, then blob
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 256, // Specify output size
+                    height: 256,
+                    imageSmoothingQuality: 'high',
+                });
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        throw new Error("Could not get blob from canvas.");
+                    }
+
+                    console.log("Cropped blob:", blob);
+                     profilePicture.style.opacity = '0.5'; // Show loading on sidebar pic too
+                     popupProfilePic.style.opacity = '0.5'; // And popup pic
+
+                    // Use existing upload function (ensure it handles blobs)
+                    const downloadURL = await uploadImage(blob);
+
+                     profilePicture.style.opacity = '1';
+                     popupProfilePic.style.opacity = '1';
+
+
+                    if (downloadURL) {
+                        await updateProfile(auth.currentUser, { photoURL: downloadURL });
+                        profilePicture.src = downloadURL; // Update sidebar immediately
+                        popupProfilePic.src = downloadURL; // Update popup
+                        console.log('Profile pic updated successfully.');
+                        closePopup(cropperModal); // Close cropper on success
+                        alert("Profile picture updated!");
+                    } else {
+                        throw new Error("Upload succeeded but no download URL received.");
+                    }
+
+                }, 'image/jpeg', 0.9); // Specify format and quality
+
+            } catch (error) {
+                console.error("Cropping/Upload error:", error);
+                alert("Failed to update profile picture. " + error.message);
+                 profilePicture.style.opacity = '1'; // Reset opacity on error
+                 popupProfilePic.style.opacity = '1';
+            } finally {
+                 cropSaveButton.textContent = 'Crop & Save';
+                 cropSaveButton.disabled = false;
+            }
+        });
+
+        // --- Sidebar Toggle Logic ---
+        // Initial state determined by screen width on load
+        let sidebarOpen = window.innerWidth >= 768;
+
+        function updateSidebarState(isInitialLoad = false) {
+            const currentSidebarWidth = sidebar.style.width || getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim();
+            if (sidebarOpen) {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('open'); // Use .open for clarity if needed, though .collapsed is enough
+                mainContent.style.paddingLeft = currentSidebarWidth;
+                mainContent.classList.remove('sidebar-collapsed');
+                sidebarToggle.innerHTML = '<i class="fas fa-times"></i>';
+            } else {
+                // Only apply collapsed class if not initial load on mobile, or if toggled manually
+                // The CSS default for mobile is already collapsed via transform
+                sidebar.classList.add('collapsed');
+                sidebar.classList.remove('open');
+                mainContent.style.paddingLeft = '0px';
+                mainContent.classList.add('sidebar-collapsed');
+                sidebarToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        }
+
+        // Apply initial width from storage or default
+        const savedSidebarWidth = localStorage.getItem('sidebarWidth');
+        if (savedSidebarWidth) {
+             document.documentElement.style.setProperty('--sidebar-width', savedSidebarWidth);
+             sidebar.style.width = savedSidebarWidth;
+        } else {
+             const initialWidth = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim();
+             document.documentElement.style.setProperty('--sidebar-width', initialWidth);
+             sidebar.style.width = initialWidth;
+        }
+
+        // Call on load to set initial state based on `sidebarOpen` variable
+        updateSidebarState(true);
+
+        // Toggle button listener
+        sidebarToggle.addEventListener('click', () => {
+            sidebarOpen = !sidebarOpen;
+            updateSidebarState();
+        });
+
+
+        // --- Sidebar Resizing Logic ---
+        let isResizing = false; let startX, startWidth;
+        sidebarResizer.addEventListener('mousedown', (e) => { isResizing = true; startX = e.clientX; startWidth = sidebar.offsetWidth; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', handleMouseUp); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
+        function handleMouseMove(e) { if (!isResizing) return; const currentX = e.clientX; const diffX = currentX - startX; let newWidth = startWidth + diffX; const minWidth = 180; const maxWidth = 400; newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth)); const newWidthPx = `${newWidth}px`; document.documentElement.style.setProperty('--sidebar-width', newWidthPx); sidebar.style.width = newWidthPx; if (sidebarOpen) { mainContent.style.paddingLeft = newWidthPx; } }
+        function handleMouseUp() { if (isResizing) { isResizing = false; document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; localStorage.setItem('sidebarWidth', sidebar.style.width); } }
+
+         // --- Profile Picture Upload (Modified) ---
+         async function uploadImage(fileOrBlob) { // Modified to accept blob
+            if (!fileOrBlob || !currentUserId) {
+                console.warn('No file/blob or user ID');
+                return null;
+            }
+            const imgRef = storageRef(storage, `profilePictures/${currentUserId}`); // Keep same path
+            try {
+                // uploadBytes works with Blobs directly
+                const snapshot = await uploadBytes(imgRef, fileOrBlob);
+                console.log('Uploaded a blob or file!', snapshot);
+                return await getDownloadURL(imgRef);
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert("Upload failed: " + error.message);
+                return null;
+            }
+        }
+
+        // Sidebar Profile Pic -> Open Profile Popup
+        profilePicture.addEventListener('click', () => openPopup(profilePopup));
+
+// Change Photo Button -> Trigger Hidden File Input
+ changePhotoButton.addEventListener('click', () => {
+    if (!currentUserId) { alert("Login first."); return; }
+     hiddenFileInput.click();
+ });
+
+// Hidden File Input -> Read File & Open Cropper
+ hiddenFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            initializeCropper(e.target.result); // Pass base64 data URL
+        };
+        reader.onerror = () => {
+            console.error("FileReader error");
+            alert("Failed to read the selected file.");
+        };
+        reader.readAsDataURL(file);
+    } else if (file) {
+        alert("Please select a valid image file.");
+    }
+     // Reset file input value so the 'change' event fires again for the same file
+     event.target.value = null;
+});
+
+// Change Username Button
+changeUsernameButton.addEventListener('click', async () => {
+    if (!currentUserId || !auth.currentUser) { alert("Login first."); return; }
+
+    const currentName = auth.currentUser.displayName || "";
+    const newUsername = prompt("Enter your new username:", currentName);
+
+    if (newUsername && newUsername.trim() !== "" && newUsername !== currentName) {
+        const finalUsername = newUsername.trim();
+         try {
+             changeUsernameButton.disabled = true;
+             changeUsernameButton.textContent = "Saving..."; // Provide feedback
+             await updateProfile(auth.currentUser, { displayName: finalUsername });
+             popupUsername.textContent = finalUsername; // Update popup display
+             console.log('Username updated successfully.');
+             alert('Username updated!');
+         } catch (error) {
+             console.error("Username update error:", error);
+             alert("Failed to update username: " + error.message);
+         } finally {
+              changeUsernameButton.disabled = false;
+              // Find icon and restore text properly
+              changeUsernameButton.innerHTML = '<i class="fas fa-pencil-alt"></i> Change Username';
+         }
+    } else if (newUsername !== null) { // If user didn't cancel but input was invalid/same
+        alert("Invalid username or no change made.");
+    }
+});
+
+         // --- Authentication State Change (Modified to update popup if open) ---
+         onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                 loginButton.textContent = 'Logout';
+                 loginButton.onclick = () => {
+                     signOut(auth).then(() => {
+                         if (currentUserId) localStorage.removeItem(`lastChatId_${currentUserId}`);
+                         location.reload();
+                     });
+                 };
+                 currentUserId = user.uid;
+                 profilePicture.src = user.photoURL || 'default_profile.png';
+
+                 // Update popup if it's open when auth state changes (e.g., after initial load/refresh)
+                  if (profilePopup.style.display === 'block') {
+                      popupProfilePic.src = user.photoURL || 'default_profile.png';
+                      popupUsername.textContent = user.displayName || 'Anonymous User';
+                  }
+
+                 loadChatHistory(user.uid);
+                 const lastChatId = localStorage.getItem(`lastChatId_${currentUserId}`);
+                 if (lastChatId) {
+                     loadChat(currentUserId, lastChatId);
+                 } else {
+                     startNewChat(false); // Don't clear storage unnecessarily
+                     messagesDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Select or start a new chat.</p>';
+                 }
+            } else {
+          loginButton.textContent = 'Login';
+          loginButton.onclick = () => location.href = 'login.html';
+          if (currentUserId) localStorage.removeItem(`lastChatId_${currentUserId}`);
+          currentUserId = null;
+          currentChatId = null;
+          clearChatHistory();
+          profilePicture.src = 'default_profile.png';
+          messagesDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Please login.</p>';
+          if (messagesListener) {
+                     messagesListener(); // Detach listener
+                     messagesListener = null;
+                 }
+                 // Close popups on logout
+                  closePopup(profilePopup);
+                  closePopup(cropperModal);
+            }
+        });
+
+        // --- Chat History ---
+        function loadChatHistory(userId) { const chatHistoryQuery = query(ref(db, 'chatHistory/' + userId), orderByChild('lastTimestamp')); onValue(chatHistoryQuery, (snapshot) => { const data = snapshot.val(); const historyFragment = document.createDocumentFragment(); chatHistoryDiv.innerHTML = ''; if (data) { const chatIds = Object.keys(data).reverse(); if (chatIds.length === 0) { chatHistoryDiv.textContent = 'No chat history yet.'; return; } chatIds.forEach(chatId => { const firstMessageQuery = query(ref(db, `chatHistory/${userId}/${chatId}/messages`), orderByChild('timestamp'), limitToFirst(1)); onValue(firstMessageQuery, (firstMsgSnapshot) => { const firstMsgData = firstMsgSnapshot.val(); let chatTitle = `Chat ${chatIds.length - chatIds.indexOf(chatId)}`; if (firstMsgData) { const firstMsgKey = Object.keys(firstMsgData)[0]; const firstText = firstMsgData[firstMsgKey]?.text; if(firstText){ chatTitle = firstText.substring(0, 20) + (firstText.length > 20 ? '...' : ''); } } const itemWrapper = document.createElement('div'); itemWrapper.className = 'chat-history-item'; itemWrapper.dataset.chatId = chatId; const chatLink = document.createElement('a'); chatLink.textContent = chatTitle; chatLink.href = '#'; chatLink.addEventListener('click', (event) => { event.preventDefault(); loadChat(userId, chatId); }); const deleteButton = document.createElement('button'); deleteButton.className = 'delete-chat-button'; deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>'; deleteButton.title = 'Delete Chat'; deleteButton.addEventListener('click', (event) => { event.stopPropagation(); deleteChat(userId, chatId); }); itemWrapper.appendChild(chatLink); itemWrapper.appendChild(deleteButton); historyFragment.appendChild(itemWrapper); if (historyFragment.children.length === chatIds.length) { chatHistoryDiv.appendChild(historyFragment); document.querySelectorAll('.chat-history-item').forEach(item => { item.classList.toggle('active', item.dataset.chatId === currentChatId); }); } }, { onlyOnce: true }); }); } else { chatHistoryDiv.textContent = 'No chat history yet.'; } }, (error) => { console.error("Error loading chat history:", error); chatHistoryDiv.textContent = 'Error loading history.'; }); }
+        function loadChat(userId, chatId) { console.log("Loading chat:", chatId); if (messagesListener) { messagesListener(); messagesListener = null; } currentChatId = chatId; localStorage.setItem(`lastChatId_${userId}`, chatId); const messagesRef = query(ref(db, `chatHistory/${userId}/${chatId}/messages`), orderByChild('timestamp')); messagesDiv.innerHTML = ''; document.querySelectorAll('.chat-history-item').forEach(item => { item.classList.toggle('active', item.dataset.chatId === chatId); }); messagesListener = onValue(messagesRef, (snapshot) => { console.log("Received data for chat:", chatId); messagesDiv.innerHTML = ''; const data = snapshot.val(); if (data) { Object.keys(data).forEach(messageId => { const message = data[messageId]; if (message && typeof message.text === 'string' && typeof message.type === 'string') { displayMessage(message.text, message.type, false); } else { console.warn('Invalid message format loaded:', messageId, message); } }); setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 50); } else { messagesDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Start typing!</p>'; } }, (error) => { console.error("Error loading chat messages:", error); messagesDiv.innerHTML = '<p style="text-align: center; color: #ff6b6b;">Error loading chat.</p>'; }); console.log("Attached listener for chat messages:", chatId); userInput.focus(); }
+        async function deleteChat(userId, chatId) { if (!userId || !chatId) return; if (window.confirm("Delete this chat history? This cannot be undone.")) { console.log("Deleting chat:", chatId); const chatRef = ref(db, `chatHistory/${userId}/${chatId}`); try { await remove(chatRef); console.log("Chat deleted."); if (chatId === currentChatId) { startNewChat(); } } catch (error) { console.error("Delete error:", error); alert("Failed to delete."); } } }
+        function clearChatHistory() { chatHistoryDiv.innerHTML = ''; chatHistoryDiv.textContent = 'Login to see chat history'; }
+        function startNewChat(clearStorage = true) { console.log("Starting new chat..."); if (messagesListener) { messagesListener(); messagesListener = null; } currentChatId = null; messagesDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Ask me anything...</p>'; document.querySelectorAll('.chat-history-item').forEach(item => item.classList.remove('active')); if (clearStorage && currentUserId) { localStorage.removeItem(`lastChatId_${currentUserId}`); } userInput.value = ''; userInput.focus(); }
+        newChatButton.addEventListener('click', () => startNewChat());
+
+        // --- Message Display & Formatting ---
+        function escapeHtml(unsafe) { /* Keep escapeHtml as is */
+            if (typeof unsafe !== 'string') return unsafe;
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // *** Function to apply inline formatting (bold, italic, code, links) ***
+        function formatResponseInline(text) {
+            let inlineHtml = escapeHtml(text); // Escape first
+            // Code first to avoid conflict with *
+            inlineHtml = inlineHtml.replace(/`([^`]+)`/g, (match, code) => `<code>${code}</code>`); // No need to escape again
+            inlineHtml = inlineHtml.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
+            inlineHtml = inlineHtml.replace(/(?<!\*)\*(?=\S)([\s\S]*?\S)\*(?!\*)/g, '<em>$1</em>');
+            // Basic URL detection (needs improvement for edge cases, but covers common ones)
+            const urlRegex = /(?<!href=["'])(?<!src=["'])(https?:\/\/[^\s<>"'()]+)/g;
+             inlineHtml = inlineHtml.replace(urlRegex, '<a href="$&" target="_blank" rel="noopener">$&</a>'); // Use $& for the whole match
+            return inlineHtml;
+        }
+
+        // *** UPDATED formatResponse: Added Markdown Table parsing ***
+        function formatResponse(text) {
+            if (!text || typeof text !== 'string') {
+                return '<p>Error: Invalid response</p>';
+            }
+            try {
+                let processedText = text;
+                const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+                const placeholderMap = {};
+
+                // 1. Temporarily replace code blocks with placeholders and store raw code
+                processedText = processedText.replace(codeBlockRegex, (match, lang, code) => {
+                    const language = lang.trim().toLowerCase() || 'plaintext';
+                    const uniqueId = `code-${Math.random().toString(36).substr(2, 9)}`;
+                    rawCodeStorage[uniqueId] = code.trimEnd(); // Store RAW code
+
+                    const placeholder = `%%%CODEBLOCK_${uniqueId}%%%`;
+                    placeholderMap[placeholder] = `
+<div class="code-block-wrapper" data-code-id="${uniqueId}">
+<div class="code-block-header"><span class="language-label">${escapeHtml(language)}</span><button class="copy-code-button" title="Copy code"><i class="fas fa-copy"></i> Copy</button></div><pre><code class="language-${escapeHtml(language)}"></code></pre>
+</div>`;
+                    return placeholder; // Replace with placeholder
+                });
+
+                // 2. Process Tables, Lists, Paragraphs, etc.
+                const lines = processedText.split('\n');
+                let html = '';
+                let inList = null; // 'ul' or 'ol'
+                let inTable = false;
+                let tableHeaderParsed = false;
+                let skipNextLine = false; // For skipping table separator
+
+                lines.forEach((line, index) => {
+                    if (skipNextLine) {
+                        skipNextLine = false;
+                        return;
+                    }
+
+                    // Check for Code Block Placeholders first
+                    if (line.startsWith('%%%CODEBLOCK_')) {
+                        if (inList) { html += (inList === 'ol' ? '</ol>' : '</ul>') + '\n'; inList = null; }
+                        if (inTable) { html += '</tbody></table>\n'; inTable = false; tableHeaderParsed = false; }
+                        html += placeholderMap[line] + '\n';
+                        return; // Move to next line after processing placeholder
+                    }
+
+                    const trimmedLine = line.trim();
+
+                    // *** Table Processing Logic ***
+                    const isTableRow = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
+                    const isSeparator = isTableRow && /^\s*\|?(\s*:?---+:?\s*\|)+/.test(trimmedLine.slice(1, -1));
+
+                    if (isTableRow && !isSeparator) {
+                        const nextLine = lines[index + 1] ? lines[index + 1].trim() : '';
+                        const nextLineIsSeparator = nextLine.startsWith('|') && nextLine.endsWith('|') && /^\s*\|?(\s*:?---+:?\s*\|)+/.test(nextLine.slice(1, -1));
+
+                        if (!inTable && nextLineIsSeparator) {
+                            // Start of a new table
+                            if (inList) { html += (inList === 'ol' ? '</ol>' : '</ul>') + '\n'; inList = null; }
+                            inTable = true;
+                            tableHeaderParsed = false;
+                            html += '<table>\n<thead>\n<tr>\n';
+                            const headers = trimmedLine.split('|').slice(1, -1);
+                            headers.forEach(header => {
+                                html += `<th>${formatResponseInline(header.trim())}</th>\n`;
+                            });
+                            html += '</tr>\n</thead>\n<tbody>\n';
+                        } else if (inTable && tableHeaderParsed) {
+                            // Regular data row
+                            html += '<tr>\n';
+                            const cells = trimmedLine.split('|').slice(1, -1);
+                            cells.forEach(cell => {
+                                html += `<td>${formatResponseInline(cell.trim())}</td>\n`;
+                            });
+                            html += '</tr>\n';
+                        } else if (inTable && !tableHeaderParsed) {
+                            // This case might occur if header parsing failed or structure is odd. Treat as data.
+                            console.warn("Parsing table row before header fully processed, treating as data:", trimmedLine);
+                             html += '<tr>\n';
+                             const cells = trimmedLine.split('|').slice(1, -1);
+                             cells.forEach(cell => {
+                                 html += `<td>${formatResponseInline(cell.trim())}</td>\n`;
+                             });
+                             html += '</tr>\n';
+                        } else {
+                            // Looks like a table row but context is wrong, treat as paragraph
+                            if (inList) { html += (inList === 'ol' ? '</ol>' : '</ul>') + '\n'; inList = null; }
+                            // Close table if open (shouldn't happen here logically, but safe)
+                             if (inTable) { html += '</tbody></table>\n'; inTable = false; tableHeaderParsed = false; }
+                            if (trimmedLine) html += `<p>${formatResponseInline(trimmedLine)}</p>\n`;
+                        }
+                    } else if (isSeparator && inTable && !tableHeaderParsed) {
+                        // Table separator found after header row
+                        tableHeaderParsed = true;
+                        skipNextLine = false; // Don't skip the *next* line, we are processing *this* one. This logic was mainly handled above.
+                    } else {
+                        // Not a table row or separator
+                        if (inTable) {
+                            // End of the table block
+                            html += '</tbody></table>\n';
+                            inTable = false;
+                            tableHeaderParsed = false;
+                        }
+
+                        // Process other elements (Lists, Paragraphs)
+                        const olMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
+                        const ulMatch = trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ');
+
+                        if (olMatch) {
+                            if (inList !== 'ol') { if (inList === 'ul') html += '</ul>\n'; html += `<ol start="${olMatch[1]}">\n`; inList = 'ol'; }
+                            html += `<li>${formatResponseInline(olMatch[2])}</li>\n`;
+                        } else if (ulMatch) {
+                            if (inList !== 'ul') { if (inList === 'ol') html += '</ol>\n'; html += '<ul>\n'; inList = 'ul'; }
+                            html += `<li>${formatResponseInline(trimmedLine.substring(2))}</li>\n`;
+                        } else {
+                            if (inList) { html += (inList === 'ol' ? '</ol>' : '</ul>') + '\n'; inList = null; }
+                             // Only wrap non-empty lines and non-placeholder lines in <p>
+                             if (trimmedLine && !trimmedLine.startsWith('%%%CODEBLOCK_')) {
+                                 // Avoid wrapping things that look like existing block elements generated by formatResponseInline (though unlikely)
+                                 if (!trimmedLine.match(/^<\/?(p|h[1-6]|ul|ol|li|pre|code|strong|em|a|div|table|blockquote)/)) {
+                                    html += `<p>${formatResponseInline(trimmedLine)}</p>\n`;
+                                 } else {
+                                    html += formatResponseInline(trimmedLine) + '\n'; // If it looks like HTML already, add as is (e.g. link was the whole line)
+                                 }
+
+                            } else if (!trimmedLine && !line.includes('%%%CODEBLOCK_')) {
+                                // Add an empty paragraph for spacing potentially, or just ignore? Let's ignore for now.
+                            }
+                        }
+                    }
+                });
+
+                // Close any open list or table tags at the end
+                if (inList) { html += (inList === 'ol' ? '</ol>' : '</ul>') + '\n'; }
+                if (inTable) { html += '</tbody></table>\n'; }
+
+                return html.trim(); // Return the final generated HTML
+
+            } catch (error) {
+                console.error('Error in formatResponse:', error);
+                return '<p>' + escapeHtml(text) + '</p>'; // Fallback
+            }
+        }
+
+
+        function displayMessage(msg, type, save = true) {
+             if (typeof msg === 'undefined' || typeof type === 'undefined') { console.error('Undef msg/type:', { msg, type }); return; }
+             const placeholder = messagesDiv.querySelector('p[style*="text-align: center"]');
+             if(placeholder) { messagesDiv.removeChild(placeholder); }
+
+            const messageElem = document.createElement("div");
+            messageElem.className = `message ${type}`;
+
+            if (type === 'bot') {
+                // 1. Format the response (generates HTML with code placeholders)
+                messageElem.innerHTML = formatResponse(msg);
+
+                // 2. Populate code blocks safely using textContent
+                messageElem.querySelectorAll('.code-block-wrapper').forEach(wrapper => {
+                    const codeId = wrapper.dataset.codeId;
+                    const codeElement = wrapper.querySelector('pre code');
+                    const copyButton = wrapper.querySelector('.copy-code-button');
+
+                    if (codeId && codeElement && rawCodeStorage[codeId] !== undefined) {
+                        // *** Use textContent to display code literally ***
+                        codeElement.textContent = rawCodeStorage[codeId];
+
+                        // Add event listener to the copy button
+                        if (copyButton) {
+                             const buttonElement = copyButton; // Capture the button element
+                             buttonElement.addEventListener('click', (e) => {
+                                 e.stopPropagation();
+                                 // Need a way to pass the codeId AND button to copyCode
+                                 window.copyCode(codeId, buttonElement); // Assuming copyCode can handle the button now
+                             });
+                        }
+                        // Clean up the temporary storage ONLY AFTER setting textContent
+                        delete rawCodeStorage[codeId];
+                    } else {
+                        console.warn("Could not find raw code or elements for code block ID:", codeId);
+                         if(codeElement) codeElement.textContent = "Error displaying code.";
+                         // Don't delete if not found, might be a timing issue (though unlikely here)
+                    }
+                });
+
+                // 3. Add copy icon for the entire message (if needed)
+                // Note: This example only adds copy buttons to code blocks
+                // To add a copy icon for the *whole* bot message:
+                // const copyIcon = document.createElement('i');
+                // copyIcon.className = 'fas fa-copy copy-icon';
+                // copyIcon.title = 'Copy message';
+                // copyIcon.onclick = (e) => {
+                //     e.stopPropagation();
+                //     copyMessage(messageElem.innerText || messageElem.textContent, copyIcon);
+                // };
+                // messageElem.appendChild(copyIcon);
+                // const tooltip = document.createElement('span');
+                // tooltip.className = 'copied-tooltip';
+                // tooltip.textContent = 'Copied!';
+                // messageElem.appendChild(tooltip);
+
+
+            } else { // User message
+                messageElem.textContent = msg; // User messages are safe as textContent
+            }
+
+            messagesDiv.appendChild(messageElem);
+            setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 50); // Scroll after content is added
+            if (currentUserId && save) { saveMessage(msg, type); }
+        }
+
+
+        // --- Message Saving ---
+        function generateChatId() { return 'chat_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+        async function saveMessage(text, type) { if (!currentUserId) return; let chatNeedsUpdateInSidebar = false; if (!currentChatId) { currentChatId = generateChatId(); chatNeedsUpdateInSidebar = true; localStorage.setItem(`lastChatId_${currentUserId}`, currentChatId); } const messagesRef = ref(db, `chatHistory/${currentUserId}/${currentChatId}/messages`); const newMessageRef = push(messagesRef); try { await set(newMessageRef, { text: text, type: type, timestamp: serverTimestamp() }); const chatMetaRef = ref(db, `chatHistory/${currentUserId}/${currentChatId}/lastTimestamp`); await set(chatMetaRef, serverTimestamp()); console.log("Message saved:", currentChatId); if (chatNeedsUpdateInSidebar) { setTimeout(() => loadChatHistory(currentUserId), 200); setTimeout(() => { document.querySelectorAll('.chat-history-item').forEach(item => { item.classList.toggle('active', item.dataset.chatId === currentChatId); }); }, 400); } } catch (error) { console.error("Save error:", error); } }
+
+        // --- Utility Functions ---
+        function copyMessage(text, feedbackElement) {
+             navigator.clipboard.writeText(text).then(() => {
+                let isCodeButton = feedbackElement.classList.contains('copy-code-button');
+
+                if (isCodeButton) {
+                     const originalHTML = feedbackElement.innerHTML;
+                     feedbackElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                     feedbackElement.classList.add('copied');
+                     setTimeout(() => {
+                         if (document.body.contains(feedbackElement)) {
+                             feedbackElement.innerHTML = originalHTML;
+                             feedbackElement.classList.remove('copied');
+                         }
+                     }, 1500);
+                } else { // Assume it's the general message copy icon
+                    const tooltip = feedbackElement.nextElementSibling; // Assumes tooltip follows icon
+                     if (tooltip && tooltip.classList.contains('copied-tooltip')) {
+                         tooltip.classList.add("show");
+                         setTimeout(() => tooltip.classList.remove("show"), 1000);
+                     } else { console.warn("Could not find tooltip for general copy icon."); }
+                }
+            }).catch(err => { console.error('Copy failed:', err); alert("Copy failed."); });
+        }
+
+         // *** Updated copyCode to use the passed button element for feedback ***
+        window.copyCode = function(uniqueId, buttonElement) {
+             // Retrieve the code from the actual code element rendered on the page
+             // This avoids relying solely on the temporary storage which gets deleted.
+             const wrapper = buttonElement.closest('.code-block-wrapper');
+             const codeElement = wrapper ? wrapper.querySelector('pre code') : null;
+             const codeToCopy = codeElement ? codeElement.textContent : null; // Get displayed code
+
+             if (codeToCopy !== null && buttonElement) {
+                 copyMessage(codeToCopy, buttonElement); // Use general copy function with the button for feedback
+             } else {
+                 // Fallback or Error Handling: Maybe try rawCodeStorage if it still exists?
+                 const fallbackCode = rawCodeStorage[uniqueId];
+                 if (fallbackCode && buttonElement) {
+                     console.warn("Using fallback rawCodeStorage for copy ID:", uniqueId);
+                     copyMessage(fallbackCode, buttonElement);
+                 } else {
+                    console.error("Code/button not found, or code content is null for ID:", uniqueId);
+                    alert("Error copying code.");
+                 }
+             }
+             // Ensure rawCodeStorage is cleaned up if fallback was used (should have been cleaned in displayMessage though)
+             if (rawCodeStorage[uniqueId]) {
+                 console.warn("Raw code storage was still present during copy for ID:", uniqueId);
+                 delete rawCodeStorage[uniqueId];
+             }
+         }
+
+
+        // --- API Interaction ---
+        function showTypingIndicator(show) { typingIndicator.classList.toggle('visible', show); setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 0); }
+        async function callApi(endpoint, body) { showTypingIndicator(true); sendButton.disabled = true; searchButton.disabled = true; try { const response = await fetch(`http://localhost:3000${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`API Error ${response.status}: ${errorText}`); } const data = await response.json(); console.log(`Backend response ${endpoint}:`, data); return data; } catch (error) { console.error(`API error (${endpoint}):`, error); displayMessage(`API Error: ${error.message || 'Connection failed.'}`, 'bot', false); return { error: error.message || 'Unknown API error' }; } finally { showTypingIndicator(false); sendButton.disabled = false; searchButton.disabled = false; userInput.focus(); } }
+        // MODIFIED sendMessage to intercept "who are you"
+        window.sendMessage = async function() {
+            const message = userInput.value.trim();
+            if (!message || sendButton.disabled) return;
+
+             const lowerCaseMessage = message.toLowerCase();
+             // Basic check for identity questions
+             const isIdentityQuery = lowerCaseMessage.includes("who are you") ||
+                                    lowerCaseMessage.includes("what are you") ||
+                                    lowerCaseMessage.includes("your name") ||
+                                     lowerCaseMessage.includes("tell me about yourself") ||
+                                     lowerCaseMessage === "who made you" ||
+                                     lowerCaseMessage === "who developed you";
+
+             displayMessage(message, 'user'); // Display user message regardless
+             userInput.value = '';
+
+            if (isIdentityQuery && !currentUserId) { // Respond even if not logged in for this query
+                 // Ensure typing indicator doesn't stick if shown briefly
+                 showTypingIndicator(false);
+                 setTimeout(() => { // Add a slight delay for effect? Optional.
+                     displayMessage("I am Nexora, an AI assistant developed by Anjan.", 'bot', false); // Don't save
+                 }, 200);
+                 return; // Stop processing, don't call API
+            } else if (isIdentityQuery && currentUserId) {
+                 // If logged in, save the user message first, then respond.
+                 // User message is already saved by the displayMessage call above since save=true by default and currentUserId exists
+                 showTypingIndicator(false);
+                 setTimeout(() => {
+                     // Bot response for identity query is not saved
+                     displayMessage("I am Nexora, an AI assistant developed by Anjan.", 'bot', false);
+                 }, 200);
+                 return; // Stop processing
+             }
+
+             // --- If not an identity query, proceed as normal ---
+             if (!currentUserId) {
+                // Optionally handle non-identity queries when logged out
+                displayMessage("Please log in to chat.", 'bot', false);
+                 return;
+             }
+             // User message was already displayed and saved (if logged in) by the initial displayMessage call
+
+            const data = await callApi('/api/chat', { prompt: message });
+            if (data && data.reply) {
+                displayMessage(data.reply, 'bot'); // Saves automatically if logged in
+            } else if (!data.error) {
+                displayMessage(`Error: Invalid response from the server.`, 'bot', false);
+            }
+        }
+                window.searchWeb = async function() { const query = userInput.value.trim(); if (!query || searchButton.disabled) return; displayMessage(query, 'user'); userInput.value = ''; const data = await callApi('/api/search', { query }); if (data && data.reply) { displayMessage(data.reply, 'bot'); } else if (!data.error) { displayMessage(`Error: Invalid search response`, 'bot', false); } }
+
+        // --- Event Listeners ---
+        userInput.addEventListener('keypress', function(event) { if (event.key === 'Enter' && !sendButton.disabled) { event.preventDefault(); sendMessage(); } });
+
+    </script>
+</body>
+
+</html>
