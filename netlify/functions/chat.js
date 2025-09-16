@@ -42,3 +42,6 @@ exports.handler = async (event, context) => {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+console.log("Loaded GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "✅ Present" : "❌ Missing");
+
