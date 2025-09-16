@@ -970,6 +970,11 @@
             }
        
             // --- Configuration ---
+            // Create a new API key without referrer restrictions for development
+            const API_KEY = "AIzaSyBsFdi9AdbdT3cXebCnLNJ15mRyDf0xJPg";
+            
+            // Alternative: Use environment variable or prompt for API key
+            // const API_KEY = prompt('Enter your Gemini API key:') || 'YOUR_API_KEY_HERE';
        
             // --- UI Interactions ---
             menuToggle.addEventListener('click', () => {
@@ -1182,30 +1187,68 @@
             }
        
             async function callGeminiAPI(botMessageElement, selectedModel) {
-                const apiUrl = "/api/chat";  // instead of Netlify function path
-
-
-                const lastUserTurn = chatHistory.filter(h => h.role === 'user').pop();
-                const payload = {
-                    prompt: lastUserTurn.parts.map(p => p.text || "").join(" "),
-                    model: selectedModel
-                };
-
-                const response = await fetch(apiUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                const isImageGeneration = selectedModel === 'gemini-2.5-flash-image-preview';
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
+       
+                let payload;
+                if (isImageGeneration) {
+                    const lastUserTurn = chatHistory.filter(h => h.role === 'user').pop();
+                    payload = {
+                        "contents": [lastUserTurn],
+                        "generationConfig": { "responseModalities": ["IMAGE", "TEXT"] }
+                    };
+                } else {
+                    payload = { 
+                        "contents": chatHistory,
+                        "generationConfig": { "temperature": 0.7, "topP": 0.9, "topK": 40 }
+                    };
+                }
+       
+                // Direct API call with no-referrer policy
+                const response = await fetch(`${apiUrl}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(payload),
-                    signal: abortController.signal
+                    signal: abortController.signal,
+                    referrerPolicy: 'no-referrer'
                 });
        
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorData.error || "Unknown"}`);
+                    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+       
+                const result = await response.json();
+               
+                const botCandidate = result.candidates?.[0];
+                if (!botCandidate) {
+                    throw new Error("Received an invalid response from the API.");
                 }
 
-                const result = await response.json();
-                updateBotMessage(botMessageElement, result.text, result.model);
-                chatHistory.push({ role: "model", parts: [{ text: result.text }] });
+                const imagePart = botCandidate.content?.parts?.find(p => p.inlineData);
+                const textPart = botCandidate.content?.parts?.find(p => p.text);
+
+                if (isImageGeneration && imagePart) {
+                    const base64Data = imagePart.inlineData.data;
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    updateBotMessage(botMessageElement, `<img src="${imageUrl}" class="rounded-lg cursor-pointer" style="max-width: 200px;" alt="Generated Image" onclick="openImageModal('${imageUrl}')">`, selectedModel);
+                    chatHistory.push({ role: "model", parts: [{ text: "[Generated Image]" }] });
+                      if (window.saveMessage) {
+                           await window.saveMessage({ sessionId: window.currentSessionId, role: 'model', text: '[Generated Image]', timestamp: Date.now() });
+                      }
+                } else if (textPart) {
+                    const botResponse = textPart.text;
+                    chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+                    updateBotMessage(botMessageElement, botResponse, selectedModel, false);
+                    if (window.saveMessage) {
+                        await window.saveMessage({ sessionId: window.currentSessionId, role: 'model', text: botResponse, timestamp: Date.now() });
+                    }
+                } else {
+                    updateBotMessage(botMessageElement, `<div class="text-red-400">The request was processed, but the model did not return a valid response.</div>`, selectedModel, false);
+                }
+                if (window.loadSessionsList) await window.loadSessionsList(sessionsSearch?.value || '');
             }
        
             // --- DOM Manipulation & Rendering ---
@@ -1753,28 +1796,29 @@
               const fileNameMatch = m.text.match(/^\[(.*?)\]/);
               
               if (fileNameMatch) {
+                  // Handle file attachments
                   const textContent = m.text.replace(/^\[.*?\]\s*/, '').trim();
                   if (textContent) {
                       parts.push({ text: textContent });
                   }
+                  // Note: We can't reconstruct the actual file data, only the text
               } else if (m.text === '[Generated Image]') {
                   parts.push({ text: '[Generated Image]' });
               } else {
                   parts.push({ text: m.text });
               }
               
+              // Add to chat history for API context
               window.chatHistory.push({ role: m.role, parts });
 
               // Display the message in UI
               if (m.role === 'user') {
-                   const attachment = m.imageUrl ? { previewUrl: m.imageUrl, fileName: fileNameMatch?.[1] } : (fileNameMatch ? { fileName: fileNameMatch[1] } : null);
+                   const attachment = fileNameMatch ? { fileName: fileNameMatch[1] } : null;
                    const displayText = m.text.replace(/^\[.*?\]\s*/, '');
                    window.appendMessage('user', displayText, attachment);
               } else {
                   const el = window.appendMessage('model', '');
-                  if (m.text === '[Generated Image]' && m.imageUrl) {
-                      window.updateBotMessage(el, `<img src="${m.imageUrl}" class="rounded-lg cursor-pointer" style="max-width: 200px;" alt="Generated Image" onclick="openImageModal('${m.imageUrl}')">`, 'image');
-                  } else if (m.text === '[Generated Image]') {
+                  if (m.text === '[Generated Image]') {
                       window.updateBotMessage(el, `<div class="text-gray-400 italic p-4 border border-gray-600 rounded-lg">🖼️ Image was generated here</div>`, 'image');
                   } else {
                       window.updateBotMessage(el, m.text, document.getElementById('model-select').value);
