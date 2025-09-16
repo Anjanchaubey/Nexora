@@ -1182,7 +1182,8 @@
             }
        
             async function callGeminiAPI(botMessageElement, selectedModel) {
-                const apiUrl = "/.netlify/functions/chat";
+                const apiUrl = "/api/chat";  // instead of Netlify function path
+
 
                 const lastUserTurn = chatHistory.filter(h => h.role === 'user').pop();
                 const payload = {
