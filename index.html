@@ -1182,7 +1182,7 @@
             }
        
             async function callGeminiAPI(botMessageElement, selectedModel) {
-                const apiUrl = "https://YOUR_BACKEND_URL/chat"; // <-- point to your proxy
+                const apiUrl = "/.netlify/functions/chat";
 
                 const lastUserTurn = chatHistory.filter(h => h.role === 'user').pop();
                 const payload = {
