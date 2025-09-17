@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Myndra</title>
+    <link rel="icon" href="dark.png" id="favicon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -435,9 +436,15 @@
         <aside id="sidebar" class="sidebar absolute md:relative z-30 w-72 flex-shrink-0 flex flex-col p-2 shadow-2xl h-screen">
             <!-- Top Section -->
             <div class="flex-shrink-0">
-                <button id="close-sidebar-btn" class="self-end p-2 hover:bg-[#272727] rounded-lg transition-colors mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <img id="sidebar-logo" src="dark.png" alt="Myndra" class="w-8 h-8">
+                        <h2 class="text-xl font-bold">Myndra</h2>
+                    </div>
+                    <button id="close-sidebar-btn" class="p-2 hover:bg-[#272727] rounded-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
                 <button id="new-chat-btn" class="flex items-center justify-between w-full p-3 hover:bg-[#272727] rounded-lg transition-all duration-300 mb-2">
                     <div class="flex items-center space-x-2">
                         <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -498,6 +505,7 @@
                         </button>
                         <!-- Model Selector -->
                         <div class="bg-[#171717] p-1 rounded-lg flex items-center space-x-2">
+                            <img id="logo-icon" src="dark.png" alt="Myndra" class="w-6 h-6 ml-2">
                             <h1 class="text-lg font-semibold px-2">Myndra</h1>
                             <select id="model-select" class="bg-transparent border-none text-white text-sm rounded-lg focus:ring-0 focus:border-none block w-full pl-2">
                                 <option value="gemini-2.5-pro">2.5 Pro</option>
@@ -1463,18 +1471,28 @@
                     body: document.body
                 };
                 
+                const favicon = document.getElementById('favicon');
+                const logoIcon = document.getElementById('logo-icon');
+                const sidebarLogo = document.getElementById('sidebar-logo');
+                
                 if (isLight) {
                     document.documentElement.setAttribute('data-theme', 'light');
                     elements.body.style.backgroundColor = '#ffffff';
                     elements.body.style.color = '#1f2937';
                     if (elements.sidebar) elements.sidebar.style.backgroundColor = '#f8fafc';
                     if (elements.chatForm) elements.chatForm.style.backgroundColor = '#f1f5f9';
+                    if (favicon) favicon.href = 'light.png';
+                    if (logoIcon) logoIcon.src = 'light.png';
+                    if (sidebarLogo) sidebarLogo.src = 'light.png';
                 } else {
                     document.documentElement.removeAttribute('data-theme');
                     elements.body.style.backgroundColor = '#0D0D0D';
                     elements.body.style.color = '#e5e7eb';
                     if (elements.sidebar) elements.sidebar.style.backgroundColor = '#171717';
                     if (elements.chatForm) elements.chatForm.style.backgroundColor = '#1c1c1c';
+                    if (favicon) favicon.href = 'dark.png';
+                    if (logoIcon) logoIcon.src = 'dark.png';
+                    if (sidebarLogo) sidebarLogo.src = 'dark.png';
                 }
             }
             
