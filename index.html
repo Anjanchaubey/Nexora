@@ -91,6 +91,46 @@
         #app-container {
             visibility: hidden;
         }
+        
+        /* Splash screen styles */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        #splash-logo {
+            width: 60px;
+            height: 60px;
+            animation: logoScale 1.75s ease-out forwards;
+        }
+        
+        @keyframes logoScale {
+            0% {
+                transform: scale(0.3);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .splash-fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
         .sidebar {
             transition: transform 0.3s ease-in-out;
             background-color: var(--bg-secondary);
@@ -430,6 +470,11 @@
     </style>
 </head>
 <body class="text-gray-200" style="background-color: var(--bg-primary); color: var(--text-primary);">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img id="splash-logo" src="dark.png" alt="Myndra">
+    </div>
 
     <div id="app-container" class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
@@ -814,6 +859,14 @@
         });
         
         document.addEventListener('DOMContentLoaded', () => {
+            // Handle splash screen
+            setTimeout(() => {
+                const splashScreen = document.getElementById('splash-screen');
+                splashScreen.classList.add('splash-fade-out');
+                setTimeout(() => {
+                    splashScreen.remove();
+                }, 300);
+            }, 1750);
             const chatForm = document.getElementById('chat-form');
             const messageInput = document.getElementById('message-input');
             const sendButton = document.getElementById('send-button');
